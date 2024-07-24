@@ -2,24 +2,18 @@ package org.wsd.app.interceptor;
 
 import lombok.extern.log4j.Log4j2;
 import org.eventa.core.commands.BaseCommand;
-import org.eventa.core.interceptor.BaseCommandInterceptor;
-import org.eventa.core.streotype.CommandInterceptor;
-import org.wsd.app.commands.CreateAccountCommand;
+import org.eventa.core.interceptor.CommandInterceptor;
+import org.eventa.core.streotype.Interceptor;
+import org.springframework.stereotype.Service;
+import org.wsd.app.commands.UpdateAccountCommand;
 
 @Log4j2
-@CommandInterceptor
-public class AccountBaseCommandInterceptor implements BaseCommandInterceptor {
-
+@Service
+@Interceptor
+public class AccountCommandInterceptor implements CommandInterceptor {
     @Override
-    public void preHandle(BaseCommand baseCommand) throws Exception {
-        if (baseCommand instanceof CreateAccountCommand) {
-            log.info("Pre CreateAccountCommand Intercepted.");
-        }
-    }
-
-    @Override
-    public void postHandle(BaseCommand baseCommand) throws Exception {
-        if (baseCommand instanceof CreateAccountCommand) {
+    public void commandIntercept(BaseCommand baseCommand) throws Exception {
+        if (baseCommand instanceof UpdateAccountCommand) {
             log.info("Pre CreateAccountCommand Intercepted.");
         }
     }

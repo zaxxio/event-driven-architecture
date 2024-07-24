@@ -1,0 +1,45 @@
+eventa:
+  event-bus: BaseEvent
+spring:
+  main:
+    banner-mode: off
+  profiles:
+    active: dev
+  application:
+    name: spring-boot-app
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      #transaction-id-prefix: tx-
+      properties:
+        enable-idempotence: true
+        acks: all
+    consumer:
+      group-id: eventa-consumer-group
+      key-deserializer: org.apache.kafka.common.serialization.UUIDDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: '*'
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    listener:
+      missing-topics-fatal: false
+      ack-mode: manual
+  jpa:
+    open-in-view: false
+  data:
+    mongodb:
+      repositories:
+        type: imperative
+      authentication-database: admin
+      auto-index-creation: true
+      database: eventstore
+      username: username
+      password: password
+      port: 27017
+      host: localhost

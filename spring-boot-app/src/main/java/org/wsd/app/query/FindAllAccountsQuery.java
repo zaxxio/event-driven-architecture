@@ -1,2 +1,9 @@
-package org.wsd.app.query;public class FindAllAccountsQuery {
+package org.wsd.app.query;
+
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class FindAllAccountsQuery {
 }

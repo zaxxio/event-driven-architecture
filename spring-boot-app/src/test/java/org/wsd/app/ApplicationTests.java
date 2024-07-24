@@ -2,6 +2,9 @@ package org.wsd.app;
 
 import lombok.extern.log4j.Log4j2;
 import org.eventa.core.dispatcher.impl.CommandDispatcherImpl;
+import org.eventa.core.eventstore.EventModel;
+import org.eventa.core.repository.EventModelRepository;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,6 +13,7 @@ import org.wsd.app.commands.UpdateAccountCommand;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,7 +25,6 @@ class ApplicationTests {
 
     @Autowired
     private CommandDispatcherImpl commandDispatcher;
-
 
     @Test
     void contextLoads() throws Exception {
@@ -52,7 +55,7 @@ class ApplicationTests {
         final Instant start = Instant.now();
 
         ExecutorService executorService = Executors.newFixedThreadPool(10);
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             executorService.submit(() -> {
                 UpdateAccountCommand updateAccountCommand = UpdateAccountCommand.builder()
                         .accountId(accountId)

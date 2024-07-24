@@ -1,4 +1,4 @@
-package org.eventa.core.repository;
+package org.eventa.core.config;
 
 import org.eventa.core.eventstore.EventModel;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface EventModelRepository extends MongoRepository<EventModel, String> {
+interface EventModelRepository extends MongoRepository<EventModel, String> {
     List<EventModel> findByAggregateIdentifier(UUID aggregateIdentifier);
 }

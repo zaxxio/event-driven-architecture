@@ -10,5 +10,5 @@ import java.lang.annotation.Target;
 @Service
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface CommandInterceptor {
+public @interface Interceptor {
 }

@@ -7,6 +7,6 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class FindByProductIdQuery {
-    private UUID productId;
+public class FindByAccountIdQuery {
+    private UUID accountId;
 }

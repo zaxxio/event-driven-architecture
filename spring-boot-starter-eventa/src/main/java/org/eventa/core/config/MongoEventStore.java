@@ -1,10 +1,11 @@
-package org.eventa.core.eventstore;
+package org.eventa.core.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.eventa.core.events.BaseEvent;
+import org.eventa.core.eventstore.EventModel;
+import org.eventa.core.eventstore.EventStore;
 import org.eventa.core.producer.EventProducer;
-import org.eventa.core.repository.EventModelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.ConcurrencyFailureException;
 

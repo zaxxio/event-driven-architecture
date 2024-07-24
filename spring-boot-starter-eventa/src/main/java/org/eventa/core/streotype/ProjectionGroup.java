@@ -9,10 +9,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
 @Service
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
 @Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public @interface ProjectionGroup {
-
+    String name();
 }
