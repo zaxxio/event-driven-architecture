@@ -41,40 +41,60 @@ public class CommandDispatcherImpl implements CommandDispatcher {
     private final Lock writeLock = readWriteLock.writeLock();
     private final Lock readLock = readWriteLock.readLock();
 
-
     @Override
     public <T extends BaseCommand> void dispatch(T baseCommand, BiConsumer<CommandMessage<T>, CommandResultMessage<?>> callback) throws Exception {
+        UUID routingKey = extractRoutingKey(baseCommand);
+        baseCommand.setMessageId(routingKey);
+        CommandHandlerType commandHandler = this.commandHandlerRegistry.getHandler(baseCommand.getClass());
+
+        preHandle(baseCommand);
+
         try {
-            this.writeLock.lock();
-            final UUID routingKey = extractRoutingKey(baseCommand);
-            baseCommand.setMessageId(routingKey);
-            final CommandHandlerType commandHandler = this.commandHandlerRegistry.getHandler(baseCommand.getClass());
-            preHandle(baseCommand);
             if (commandHandler.handlerType() == CommandHandlerType.HandlerType.METHOD) {
-                final Method registryMethodHandler = commandHandler.getCommandHandlerMethod();
-                final AggregateRoot aggregateRoot = context.getBean(registryMethodHandler.getDeclaringClass().asSubclass(AggregateRoot.class));
-                final List<BaseEvent> historicalEvents = eventStore.getEvents(baseCommand.getMessageId());
-                aggregateRoot.replayEvents(historicalEvents);
-                registryMethodHandler.invoke(aggregateRoot, baseCommand);
-                final String key = eventStore.saveEvents(aggregateRoot.getAggregateIdentifier(), aggregateRoot.getUncommittedChanges(), aggregateRoot.getVersion() - 1, registryMethodHandler.getDeclaringClass().getName(), false);
-                aggregateRoot.markChangesAsCommitted();
-                callback.accept(new CommandMessage<>(baseCommand), new CommandResultMessage<>(key));
+                handleMethodCommand(baseCommand, callback, commandHandler);
             } else {
-                final Constructor<?> registryCommandHandler = commandHandler.getCommandHandlerConstructor();
-                final AggregateRoot aggregateRoot = context.getBean(registryCommandHandler.getDeclaringClass().asSubclass(AggregateRoot.class), baseCommand);
-                final String key = eventStore.saveEvents(aggregateRoot.getAggregateIdentifier(), aggregateRoot.getUncommittedChanges(), aggregateRoot.getVersion() - 1, registryCommandHandler.getDeclaringClass().getName(), true);
-                aggregateRoot.markChangesAsCommitted();
-                callback.accept(new CommandMessage<>(baseCommand), new CommandResultMessage<>(key));
+                handleConstructorCommand(baseCommand, callback, commandHandler);
             }
         } catch (Exception ex) {
-            log.error(ex.getCause());
+            log.error("Error dispatching command", ex);
             callback.accept(new CommandMessage<>(baseCommand), new CommandResultMessage<>(ex.getCause()));
-        } finally {
-            this.writeLock.unlock();
         }
     }
 
-    private synchronized <T extends BaseCommand> UUID extractRoutingKey(T command) throws IllegalAccessException {
+    private <T extends BaseCommand> void handleMethodCommand(T baseCommand, BiConsumer<CommandMessage<T>, CommandResultMessage<?>> callback, CommandHandlerType commandHandler) throws Exception {
+        Method registryMethodHandler = commandHandler.getCommandHandlerMethod();
+        AggregateRoot aggregateRoot = context.getBean(registryMethodHandler.getDeclaringClass().asSubclass(AggregateRoot.class));
+
+        List<BaseEvent> historicalEvents = eventStore.getEvents(baseCommand.getMessageId());
+        aggregateRoot.replayEvents(historicalEvents);
+
+        registryMethodHandler.invoke(aggregateRoot, baseCommand);
+
+        try {
+            writeLock.lock();
+            String key = eventStore.saveEvents(aggregateRoot.getAggregateIdentifier(), aggregateRoot.getUncommittedChanges(), aggregateRoot.getVersion() - 1, registryMethodHandler.getDeclaringClass().getName(), false);
+            aggregateRoot.markChangesAsCommitted();
+            callback.accept(new CommandMessage<>(baseCommand), new CommandResultMessage<>(key));
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    private <T extends BaseCommand> void handleConstructorCommand(T baseCommand, BiConsumer<CommandMessage<T>, CommandResultMessage<?>> callback, CommandHandlerType commandHandler) throws Exception {
+        Constructor<?> registryCommandHandler = commandHandler.getCommandHandlerConstructor();
+        AggregateRoot aggregateRoot = context.getBean(registryCommandHandler.getDeclaringClass().asSubclass(AggregateRoot.class), baseCommand);
+
+        try {
+            writeLock.lock();
+            String key = eventStore.saveEvents(aggregateRoot.getAggregateIdentifier(), aggregateRoot.getUncommittedChanges(), aggregateRoot.getVersion() - 1, registryCommandHandler.getDeclaringClass().getName(), true);
+            aggregateRoot.markChangesAsCommitted();
+            callback.accept(new CommandMessage<>(baseCommand), new CommandResultMessage<>(key));
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    private <T extends BaseCommand> UUID extractRoutingKey(T command) throws IllegalAccessException {
         Class<? extends BaseCommand> aClass = command.getClass();
         for (Field field : aClass.getDeclaredFields()) {
             if (field.isAnnotationPresent(RoutingKey.class)) {
@@ -85,8 +105,8 @@ public class CommandDispatcherImpl implements CommandDispatcher {
         throw new IllegalAccessException("Command must have @RoutingKey for aggregate mapping.");
     }
 
-    private synchronized <T extends BaseCommand> void preHandle(T baseCommand) {
-        this.commandInterceptorRegisterer.getCommandInterceptors().forEach(commandInterceptor -> {
+    private <T extends BaseCommand> void preHandle(T baseCommand) {
+        commandInterceptorRegisterer.getCommandInterceptors().forEach(commandInterceptor -> {
             try {
                 commandInterceptor.commandIntercept(baseCommand);
             } catch (Exception e) {

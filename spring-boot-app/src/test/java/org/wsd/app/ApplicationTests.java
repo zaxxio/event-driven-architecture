@@ -3,7 +3,6 @@ package org.wsd.app;
 import lombok.extern.log4j.Log4j2;
 import org.eventa.core.dispatcher.impl.CommandDispatcherImpl;
 import org.eventa.core.eventstore.EventModel;
-import org.eventa.core.repository.EventModelRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
